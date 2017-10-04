@@ -8,9 +8,9 @@
 */
 
 #include "Arduino.h"
-#include "MCP3008.h"
+#include "MCP3208.h"
 
-MCP3008::MCP3008(int clockpin, int mosipin, int misopin, int cspin) {
+MCP3208::MCP3208(int clockpin, int mosipin, int misopin, int cspin) {
     
     // define SPI outputs and inputs for bitbanging
     
@@ -24,10 +24,11 @@ MCP3008::MCP3008(int clockpin, int mosipin, int misopin, int cspin) {
     pinMode(_mosipin, OUTPUT);
     pinMode(_misopin, INPUT);
     
+    digitalWrite(_cspin, HIGH); //     # bring CS low
 }
 
 // read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
-int MCP3008::readADC(int adcnum) {
+int MCP3208::readADC(int adcnum) {
 
   if ((adcnum > 7) || (adcnum < 0)) return -1; // Wrong adc address return -1
 
@@ -41,11 +42,13 @@ int MCP3008::readADC(int adcnum) {
   commandout |= 0x18; //  # start bit + single-ended bit
   commandout <<= 3; //    # we only need to send 5 bits here
  
-  for (int i=0; i<5; i++) {
-    if (commandout & 0x80) 
+  for (int i=0; i<=4; i++) {
+    if (commandout & 0x80) {
       digitalWrite(_mosipin, HIGH);
-    else   
+    }
+    else {
       digitalWrite(_mosipin, LOW);
+    }
       
     commandout <<= 1;
     digitalWrite(_clockpin, HIGH);
@@ -55,12 +58,13 @@ int MCP3008::readADC(int adcnum) {
 
   int adcout = 0;
   // read in one empty bit, one null bit and 10 ADC bits
-  for (int i=0; i<12; i++) {
+  for (int i=0; i<=13; i++) {
     digitalWrite(_clockpin, HIGH);
     digitalWrite(_clockpin, LOW);
     adcout <<= 1;
-    if (digitalRead(_misopin))
+    if (digitalRead(_misopin)) {
       adcout |= 0x1;
+    }
   } 
   digitalWrite(_cspin, HIGH);
 
